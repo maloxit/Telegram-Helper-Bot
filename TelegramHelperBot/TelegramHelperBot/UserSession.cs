@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MySql.Data.MySqlClient;
+using Telegram.Bot.Types;
 
 namespace TelegramHelperBot
 {
-    class DataBaseManager
+    class UserSession
     {
-        public DataBaseManager(string dbConnectionString)
-        {
-        }
+        public Task<Message> lastSendMessageTask { get; internal set; }
     }
 }

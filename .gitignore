@@ -338,3 +338,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/TelegramHelperBot/TelegramHelperBot/botToken.txt
+/TelegramHelperBot/TelegramHelperBot/dbConnectionString.txt

@@ -43,6 +43,7 @@
     <Compile Include="DataBaseManager.cs" />
     <Compile Include="HelperBot.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="UserSession.cs" />
     <Compile Include="UserSessionsManager.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +58,10 @@
     <Reference Include="Telegram.Bot, Version=15.7.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Telegram.Bot.15.7.1\lib\net45\Telegram.Bot.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="botToken.txt" />
+    <Content Include="dbConnectionString.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
