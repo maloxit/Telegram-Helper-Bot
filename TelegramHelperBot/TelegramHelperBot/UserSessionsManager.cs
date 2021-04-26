@@ -18,12 +18,12 @@ namespace TelegramHelperBot
         {
             this.dbManager = dbManager;
             activeSessions = new Dictionary<long, UserSession>(50);
-            nextMarkupEditRequests = new List<MarkupEditRequest>();
+            nextMarkupEditRequests = new List<DeleteKeyboardRequest>();
             nextReplytRequests = new List<ReplytRequest>();
         }
 
         //Массив запросов на редактирование предыдущих сообщений (в часности отключение inline кнопок)
-        public List<MarkupEditRequest> nextMarkupEditRequests;
+        public List<DeleteKeyboardRequest> nextMarkupEditRequests;
 
         //Массив запросов на отправку сообщений
         public List<ReplytRequest> nextReplytRequests;
@@ -73,7 +73,7 @@ namespace TelegramHelperBot
 
                 if (session.lastUpdateOffset != offset)
                 {
-                    session.ProcessUpdate(dbManager, chatId, upd, offset, out ReplytRequest replytRequest, out MarkupEditRequest editRequest);
+                    session.ProcessUpdate(dbManager, chatId, upd, offset, out ReplytRequest replytRequest, out DeleteKeyboardRequest editRequest);
                     if (replytRequest != null) nextReplytRequests.Add(replytRequest);
                     if (editRequest != null) nextMarkupEditRequests.Add(editRequest);
                 }
@@ -98,17 +98,17 @@ namespace TelegramHelperBot
         public readonly string text;
         public readonly InlineKeyboardMarkup replyMarkup;
 
-        public ReplytRequest(long chatId, string text, params (string, string) [] options)
+        public ReplytRequest(long chatId, string text, List<Option> options)
         {
             this.chatId = chatId;
             this.text = text;
-            List<InlineKeyboardButton> keyboard = new List<InlineKeyboardButton>(options.Length);
+            List<InlineKeyboardButton> keyboard = new List<InlineKeyboardButton>(options.Count);
             foreach (var opt in options)
             {
                 var button = new InlineKeyboardButton
                 {
-                    CallbackData = opt.Item1,
-                    Text = opt.Item2
+                    CallbackData = opt.shortName,
+                    Text = opt.text
                 };
                 keyboard.Add(button);
             }
@@ -117,27 +117,17 @@ namespace TelegramHelperBot
     }
 
     //Хранит данные, которые нужно передать боту для изменения (отключения) inline кнопок в отправленном ранее сообщении
-    public class MarkupEditRequest
+    public class DeleteKeyboardRequest
     {
         public readonly long chatId;
         public readonly int inlineMessageId;
         public readonly InlineKeyboardMarkup replyMarkup;
 
-        public MarkupEditRequest(long chatId, int inlineMessageId, params (string, string)[] options)
+        public DeleteKeyboardRequest(long chatId, int inlineMessageId)
         {
             this.chatId = chatId;
             this.inlineMessageId = inlineMessageId;
-            List<InlineKeyboardButton> keyboard = new List<InlineKeyboardButton>(options.Length);
-            foreach (var opt in options)
-            {
-                var button = new InlineKeyboardButton
-                {
-                    CallbackData = opt.Item1,
-                    Text = opt.Item2
-                };
-                keyboard.Add(button);
-            }
-            replyMarkup = new InlineKeyboardMarkup(keyboard);
+            replyMarkup = null;
         }
     }
 }
