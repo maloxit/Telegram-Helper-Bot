@@ -15,6 +15,7 @@ namespace TelegramHelperBot
         public Stack<int> questionsIds;
         const int beginOfNode = 1;
         public QuestionData currentQuestion = null;
+        public bool isBegin = false;
         public UserSession(long chatId)
         {
             this.chatId = chatId;
@@ -32,10 +33,9 @@ namespace TelegramHelperBot
             }
             finalText = string.Concat(currentQuestion.nodeText, "\n", finalText);
 
-            return new ReplytRequest(chatId, finalText, currentQuestion.optionList, true);
+            isBegin = questionsIds.Count == 0 ? false : true;
+            return new ReplytRequest(chatId, finalText, currentQuestion.optionList, isBegin);
         }
-
-       
 
         private void ProcessingCallbackQuery(DataBaseManager dbManager, Update upd)
         {
@@ -44,7 +44,7 @@ namespace TelegramHelperBot
                 // предыдущий вопрос
                 QuestionData prevQuestion = dbManager.GetQuestionData(questionsIds.Pop());
                 if (prevQuestion == null)
-                    throw new Exception("Database error");
+                    throw new Exception("DataBase error");
                 currentQuestion = prevQuestion;
                 return;
             }
