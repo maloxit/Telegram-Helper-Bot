@@ -32,13 +32,23 @@ namespace TelegramHelperBot
             }
             finalText = string.Concat(currentQuestion.nodeText, "\n", finalText);
 
-            return new ReplytRequest(chatId, finalText, currentQuestion.optionList);
+            return new ReplytRequest(chatId, finalText, currentQuestion.optionList, true);
         }
 
        
 
         private void ProcessingCallbackQuery(DataBaseManager dbManager, Update upd)
         {
+            if(upd.CallbackQuery.Data == new ReplytRequest().backButton.shortName)
+            {
+                // предыдущий вопрос
+                QuestionData prevQuestion = dbManager.GetQuestionData(questionsIds.Pop());
+                if (prevQuestion == null)
+                    throw new Exception("Database error");
+                currentQuestion = prevQuestion;
+                return;
+            }
+
             Option foundOption = null;
             foreach (var option in currentQuestion.optionList)
             {

@@ -22,6 +22,7 @@ namespace TelegramHelperBot
 
         public QuestionData(int nodeId)
         {
+            this.nodeId = nodeId;
             linkList = new List<string>();
             optionList = new List<Option>();
         }
