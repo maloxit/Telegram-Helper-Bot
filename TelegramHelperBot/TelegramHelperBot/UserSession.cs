@@ -13,9 +13,9 @@ namespace TelegramHelperBot
         public long chatId;
         public int lastUpdateOffset;
         public Stack<int> questionsIds;
-        const int beginOfNode = 1;
+        const int beginOfNode = 4;
         public QuestionData currentQuestion = null;
-        public bool isBegin = false;
+        public DateTime lastUpdateTime;
         public UserSession(long chatId)
         {
             this.chatId = chatId;
@@ -33,20 +33,33 @@ namespace TelegramHelperBot
             }
             finalText = string.Concat(currentQuestion.nodeText, "\n", finalText);
 
-            isBegin = questionsIds.Count == 0 ? false : true;
-            return new ReplytRequest(chatId, finalText, currentQuestion.optionList, isBegin);
+            if(questionsIds.Count == 0)
+            {
+                return new ReplytRequest(chatId, finalText, currentQuestion.optionList);
+            }
+            else
+            {
+                return new ReplytRequest(chatId, finalText, currentQuestion.optionList, currentQuestion.nodeId);
+            }
         }
 
         private void ProcessingCallbackQuery(DataBaseManager dbManager, Update upd)
         {
-            if(upd.CallbackQuery.Data == new ReplytRequest().backButton.shortName)
+            if(upd.CallbackQuery.Data == ReplytRequest.backButton.shortName + currentQuestion.nodeId.ToString())
             {
-                // предыдущий вопрос
-                QuestionData prevQuestion = dbManager.GetQuestionData(questionsIds.Pop());
-                if (prevQuestion == null)
-                    throw new Exception("DataBase error");
-                currentQuestion = prevQuestion;
-                return;
+                if (questionsIds.Count == 0)
+                {
+                    return;
+                }
+                else
+                {
+                    // предыдущий вопрос
+                    QuestionData prevQuestion = dbManager.GetQuestionData(questionsIds.Pop(), upd.CallbackQuery.From.LanguageCode);
+                    if (prevQuestion == null)
+                        throw new Exception("Prev question DataBase error");
+                    currentQuestion = prevQuestion;
+                    return;
+                }
             }
 
             Option foundOption = null;
@@ -63,7 +76,7 @@ namespace TelegramHelperBot
                 throw new Exception("Invalid option");
             }
             questionsIds.Push(currentQuestion.nodeId);
-            QuestionData newQuestion = dbManager.GetQuestionData(foundOption.nextNodeId);
+            QuestionData newQuestion = dbManager.GetQuestionData(foundOption.nextNodeId, upd.CallbackQuery.From.LanguageCode);
             if (newQuestion == null)
             {
                 throw new Exception("DataBase error");
@@ -73,30 +86,45 @@ namespace TelegramHelperBot
 
         public void ProcessUpdate(DataBaseManager dbManager, long chatId, Update upd, int offset, out ReplytRequest replytRequest, out DeleteKeyboardRequest editRequest)
         {
+            lastUpdateTime = DateTime.Now;
             lastUpdateOffset = offset;
             editRequest = null;
             replytRequest = null;
-            if (currentQuestion == null)
-            {
-                questionsIds.Clear();
-                currentQuestion = dbManager.GetQuestionData(beginOfNode);
-                replytRequest = PrepareReplytRequest();
-                return;
-            }
-
             switch (upd.Type)
             {
-                //upd.CallbackQuery.From.LanguageCode
                 case UpdateType.CallbackQuery:
-                    editRequest = new DeleteKeyboardRequest(chatId, upd.CallbackQuery.Message.MessageId);
-                    ProcessingCallbackQuery(dbManager, upd);
-                    replytRequest = PrepareReplytRequest();
-                    break;
-                case UpdateType.Message:
-                    if (upd.Message.Text == "/start")
+                    if (currentQuestion == null)
                     {
                         questionsIds.Clear();
-                        currentQuestion = dbManager.GetQuestionData(beginOfNode);
+                        currentQuestion = dbManager.GetQuestionData(beginOfNode, upd.CallbackQuery.From.LanguageCode);
+                        replytRequest = PrepareReplytRequest();
+                        break;
+                    }
+                    editRequest = new DeleteKeyboardRequest(chatId, upd.CallbackQuery.Message.MessageId);
+                    try
+                    {
+                        ProcessingCallbackQuery(dbManager, upd);
+                        replytRequest = PrepareReplytRequest();
+                    }
+                    catch(Exception ex)
+                    {
+                        if(ex.Message == "Invalid option")
+                        {
+                            replytRequest = null;
+                            editRequest = null;
+                        }
+                        else
+                        {
+                            throw ex;
+                        }
+                    }
+                    
+                    break;
+                case UpdateType.Message:
+                    if (currentQuestion == null || upd.Message.Text == "/start")
+                    {
+                        questionsIds.Clear();
+                        currentQuestion = dbManager.GetQuestionData(beginOfNode, upd.Message.From.LanguageCode);
                         replytRequest = PrepareReplytRequest();
                     }
                     break;

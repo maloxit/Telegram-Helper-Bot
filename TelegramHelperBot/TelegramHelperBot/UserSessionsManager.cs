@@ -89,7 +89,14 @@ namespace TelegramHelperBot
         //Удаляет из activeSessions сессии, которые не были активны долгое время
         public void RemoveOld()
         {
-            //throw new NotImplementedException();
+            if (activeSessions.Count > 100)
+            {
+                List< KeyValuePair<long, UserSession>> oldList = activeSessions.Where( pair => DateTime.Now.Subtract(pair.Value.lastUpdateTime).Days > 30).ToList();
+                foreach (var item in oldList)
+                {
+                    activeSessions.Remove(item.Key);
+                }
+            }
         }
     }
 
@@ -99,20 +106,18 @@ namespace TelegramHelperBot
         public readonly long chatId;
         public readonly string text;
         public readonly InlineKeyboardMarkup replyMarkup;
-        public Option backButton = new Option { shortName = "Back", text = "Назад", nextNodeId = 0 };
-        public ReplytRequest()
-        {
-        }
-        public ReplytRequest(long chatId, string text, List<Option> options, bool isNeedBackButton = false)
+        public static Option backButton = new Option { shortName = "Back", text = "Назад", nextNodeId = 0 };
+        
+        public ReplytRequest(long chatId, string text, List<Option> options, int backButtonId = -1)
         {
             this.chatId = chatId;
             this.text = text;
             // лист листов для печати каждой inline кнопки с новой строки
             List<List<InlineKeyboardButton>> keyboard = new List<List<InlineKeyboardButton>>(options.Count);
-            if (isNeedBackButton)// добавить кнопку назад
+            if (backButtonId != -1)// добавить кнопку назад
             {
                 List<InlineKeyboardButton> back = new List<InlineKeyboardButton>();
-                back.Add(new InlineKeyboardButton { CallbackData = backButton.shortName, Text = backButton.text });
+                back.Add(new InlineKeyboardButton { CallbackData = backButton.shortName + backButtonId.ToString(), Text = backButton.text });
                 keyboard.Add(back);
             }
             foreach (var opt in options)
