@@ -26,7 +26,7 @@ namespace TelegramHelperBot
         {
             try
             {
-                //Запуск клиента и проверка корреутности запуска
+                //Запуск клиента и проверка корректности запуска
                 botClient = new TelegramBotClient(botToken);
                 User me = botClient.GetMeAsync().Result;
                 if (me == null || string.IsNullOrEmpty(me.Username))
@@ -50,10 +50,8 @@ namespace TelegramHelperBot
                     Update[] nextUpdates = botClient.GetUpdatesAsync(offset).Result;
                     if (nextUpdates.Length > 0)
                     {
-                        //Изменение номера следующено ожидаемого апдейта
-                        offset = nextUpdates.Last().Id + 1;
-                        //Вызов обрамотки апдейтов менеджером сессий
-                        usManager.ProcessNextUpdates(nextUpdates);
+                        //Вызов обработки апдейтов менеджером сессий
+                        usManager.ProcessNextUpdates(nextUpdates, offset);
                         //Получение массива запросов, появившихся после обработки, на изменение (отключение) inline кнопок в отправленных ранее сообщенях
                         var nextMarkupEditRequests = usManager.nextMarkupEditRequests;
                         foreach (var markupEdit in nextMarkupEditRequests)
@@ -65,11 +63,13 @@ namespace TelegramHelperBot
                         var nextReplytRequests = usManager.nextReplytRequests;
                         foreach (var reply in nextReplytRequests)
                         {
-                            //Запуск задачи асинхронной отправки сообщения, задача записывается в соответствующую сессию для возможности позже редактировать это сообщение
-                            usManager[reply.chatId].lastSendMessageTask = botClient.SendTextMessageAsync(reply.chatId, reply.text, reply.replyMarkup);
+                            //Запуск задачи асинхронной отправки сообщения
+                            botClient.SendTextMessageAsync(reply.chatId, reply.text, replyMarkup: reply.replyMarkup);
                         }
                         //Удаление неактивных сессий
                         usManager.RemoveOld();
+                        //Изменение номера следующено ожидаемого апдейта
+                        offset = nextUpdates.Last().Id + 1;
                     }
                     //Пауза, чтобы бот не был автоматически забанен
                     Thread.Sleep(1000);
