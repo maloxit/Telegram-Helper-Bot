@@ -45,6 +45,7 @@ namespace TelegramHelperBot
                     Console.WriteLine(ex.InnerException.Message);
                 }
             }
+            Console.ReadKey();
             return;
         }
     }

@@ -31,8 +31,20 @@ namespace TelegramHelperBot
             }
         }
 
-        public QuestionData GetQuestionData(int nodeId, string languageCode = "RUS")
+        public QuestionData GetQuestionData(int nodeId, string languageCode)
         {
+            switch(languageCode)
+            {
+                case "ru":
+                    languageCode = "RUS";
+                    break;
+                case "en":
+                    languageCode = "ENG";
+                    break;
+                default:
+                    languageCode = "RUS";
+                    break;
+            }
             QuestionData questionData = new QuestionData(nodeId);
             string nodeDataSqlCommandString =
                 "SELECT `node`.`short_name`, `node_multiling_text`.`text` FROM `node` LEFT JOIN `node_multiling_text` ON `node_multiling_text`.`node_id` = `node`.`id` WHERE `node`.`id` = @nodeId AND `node_multiling_text`.`language` = @languageCode";
@@ -55,7 +67,7 @@ namespace TelegramHelperBot
             {
                 nodeDataSqlCommand.Parameters.AddWithValue("@nodeId", nodeId);
                 nodeDataSqlCommand.Parameters.AddWithValue("@languageCode", languageCode);
-                connection.Open();
+                OpenConnection();
                 dataReader = nodeDataSqlCommand.ExecuteReader();
                 if (!dataReader.HasRows)
                 {
@@ -64,21 +76,21 @@ namespace TelegramHelperBot
                 dataReader.Read();
                 questionData.shortName = dataReader.GetString("short_name");
                 questionData.nodeText = dataReader.GetTextReader(dataReader.GetOrdinal("text")).ReadToEnd();
-                connection.Close();
+                CloseConnection();
 
                 nodeLinksSqlCommand.Parameters.AddWithValue("@nodeId", nodeId);
                 nodeLinksSqlCommand.Parameters.AddWithValue("@languageCode", languageCode);
-                connection.Open();
+                OpenConnection();
                 dataReader = nodeLinksSqlCommand.ExecuteReader();
                 while (dataReader.Read())
                 {
                     questionData.linkList.Add(dataReader.GetTextReader(dataReader.GetOrdinal("link_text")).ReadToEnd());
                 }
-                connection.Close();
+                CloseConnection();
 
                 nodeOptionsSqlCommand.Parameters.AddWithValue("@nodeId", nodeId);
                 nodeOptionsSqlCommand.Parameters.AddWithValue("@languageCode", languageCode);
-                connection.Open();
+                OpenConnection();
                 dataReader = nodeOptionsSqlCommand.ExecuteReader();
                 while (dataReader.Read())
                 {
@@ -90,7 +102,7 @@ namespace TelegramHelperBot
                     };
                     questionData.optionList.Add(option);
                 }
-                connection.Close();
+                CloseConnection();
             }
             catch (Exception ex)
             {
@@ -105,7 +117,7 @@ namespace TelegramHelperBot
             }
             finally
             {
-                connection.Close();
+                CloseConnection();
             }
 
             return questionData;

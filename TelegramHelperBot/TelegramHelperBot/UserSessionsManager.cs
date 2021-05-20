@@ -13,6 +13,7 @@ namespace TelegramHelperBot
     {
         DataBaseManager dbManager;
         Dictionary<long, UserSession> activeSessions;
+        
 
         public UserSessionsManager(DataBaseManager dbManager)
         {
@@ -20,6 +21,7 @@ namespace TelegramHelperBot
             activeSessions = new Dictionary<long, UserSession>(50);
             nextMarkupEditRequests = new List<DeleteKeyboardRequest>();
             nextReplytRequests = new List<ReplytRequest>();
+            
         }
 
         //Массив запросов на редактирование предыдущих сообщений (в часности отключение inline кнопок)
@@ -87,7 +89,14 @@ namespace TelegramHelperBot
         //Удаляет из activeSessions сессии, которые не были активны долгое время
         public void RemoveOld()
         {
-            //throw new NotImplementedException();
+            if (activeSessions.Count > 100)
+            {
+                List< KeyValuePair<long, UserSession>> oldList = activeSessions.Where( pair => DateTime.Now.Subtract(pair.Value.lastUpdateTime).Days > 30).ToList();
+                foreach (var item in oldList)
+                {
+                    activeSessions.Remove(item.Key);
+                }
+            }
         }
     }
 
@@ -97,20 +106,30 @@ namespace TelegramHelperBot
         public readonly long chatId;
         public readonly string text;
         public readonly InlineKeyboardMarkup replyMarkup;
-
-        public ReplytRequest(long chatId, string text, List<Option> options)
+        public static Option backButton = new Option { shortName = "Back", text = "Назад", nextNodeId = 0 };
+        
+        public ReplytRequest(long chatId, string text, List<Option> options, int backButtonId = -1)
         {
             this.chatId = chatId;
             this.text = text;
-            List<InlineKeyboardButton> keyboard = new List<InlineKeyboardButton>(options.Count);
+            // лист листов для печати каждой inline кнопки с новой строки
+            List<List<InlineKeyboardButton>> keyboard = new List<List<InlineKeyboardButton>>(options.Count);
+            if (backButtonId != -1)// добавить кнопку назад
+            {
+                List<InlineKeyboardButton> back = new List<InlineKeyboardButton>();
+                back.Add(new InlineKeyboardButton { CallbackData = backButton.shortName + backButtonId.ToString(), Text = backButton.text });
+                keyboard.Add(back);
+            }
             foreach (var opt in options)
             {
+                List<InlineKeyboardButton> keyboardRow = new List<InlineKeyboardButton>();
                 var button = new InlineKeyboardButton
                 {
                     CallbackData = opt.shortName,
                     Text = opt.text
                 };
-                keyboard.Add(button);
+                keyboardRow.Add(button);
+                keyboard.Add(keyboardRow);
             }
             replyMarkup = new InlineKeyboardMarkup(keyboard);
         }
